@@ -1,9 +1,27 @@
 import 'dart:typed_data';
 
+import 'package:c64_flutter/cpu_tables.dart';
+
 import 'memory.dart';
+enum AddressMode {
+  implied,          /* 0 */
+  accumulator,      /* 1 */
+  immediate,        /* 2 */
+  zeroPage,         /* 3 */
+  zeroPageX,        /* 4 */
+  zeroPageY,        /* 5 */
+  relative,         /* 6 */
+  absolute,         /* 7 */
+  absoluteX,        /* 8 */
+  absoluteY,        /* 9 */
+  indirect,         /* 10 */
+  indexedIndirect,  /* 11 */
+  indirectIndexed   /* 12 */
+}
 
 class Cpu {
   final Memory memory;
+
   int _a = 0, _x = 0, _y = 0;
   int pc = 0;
   Cpu({required this.memory});
