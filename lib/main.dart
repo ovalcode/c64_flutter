@@ -60,7 +60,7 @@ class MyHomePage extends StatelessWidget {
               return Column(
                 children: [
                   Text(
-                    getRegisterDump(state.a, state.x, state.y, state.pc)
+                    getRegisterDump(state.a, state.x, state.y, state.n, state.z, state.pc)
                   ),
                   Text(
                     getMemDump(state.memorySnippet),
@@ -84,14 +84,14 @@ class MyHomePage extends StatelessWidget {
         ));
   }
 
-  String getRegisterDump(int a, int x, int y, int pc) {
+  String getRegisterDump(int a, int x, int y, bool n, bool z, int pc) {
     return 'A: ${a.toRadixString(16)
         .padLeft(2, '0')
         .toUpperCase()} X: ${x.toRadixString(16)
         .padLeft(2, '0')
         .toUpperCase()} Y: ${y.toRadixString(16)
         .padLeft(2, '0')
-        .toUpperCase()} PC: ${pc.toRadixString(16)
+        .toUpperCase()} N: $n Z: $z PC: ${pc.toRadixString(16)
         .padLeft(4, '0')
         .toUpperCase()}';
   }

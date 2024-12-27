@@ -77,7 +77,7 @@ class Cpu {
   }
 
   int _a = 0, _x = 0, _y = 0;
-  bool n = false, z = false;
+  bool _n = false, _z = false;
   int pc = 0;
 
   Cpu({required this.memory});
@@ -92,6 +92,14 @@ class Cpu {
 
   int getY() {
     return _y;
+  }
+
+  bool getN() {
+    return _n;
+  }
+
+  bool getZ() {
+    return _z;
   }
 
   step() {
@@ -122,8 +130,8 @@ class Cpu {
     */
       case 0xa9:
         _a = arg0;
-        n = (_a & 0x80) != 0;
-        z = _a == 0;
+        _n = (_a & 0x80) != 0;
+        _z = _a == 0;
       case 0xB5:
       case 0xAD:
       case 0xBD:
@@ -131,8 +139,8 @@ class Cpu {
       case 0xA1:
       case 0xB1:
         _a = memory.getMem(resolvedAddress);
-        n = (_a & 0x80) != 0;
-        z = _a == 0;
+        _n = (_a & 0x80) != 0;
+        _z = _a == 0;
 
 /*
 LDX (LoaD X register)
@@ -148,15 +156,15 @@ Absolute,Y    LDX $4400,Y   $BE  3   4+
  */
       case 0xA2:
         _x = arg0;
-        n = (_x & 0x80) != 0;
-        z = _x == 0;
+        _n = (_x & 0x80) != 0;
+        _z = _x == 0;
       case 0xA6:
       case 0xB6:
       case 0xAE:
       case 0xBE:
         _x = memory.getMem(resolvedAddress);
-        n = (_x & 0x80) != 0;
-        z = _x == 0;
+        _n = (_x & 0x80) != 0;
+        _z = _x == 0;
 
       /*
       LDY (LoaD Y register)
@@ -172,15 +180,15 @@ Absolute,X    LDY $4400,X   $BC  3   4+
        */
       case 0xA0:
         _y = arg0;
-        n = (_y & 0x80) != 0;
-        z = _y == 0;
+        _n = (_y & 0x80) != 0;
+        _z = _y == 0;
       case 0xA4:
       case 0xB4:
       case 0xAC:
       case 0xBC:
         _y = memory.getMem(resolvedAddress);
-        n = (_y & 0x80) != 0;
-        z = _y == 0;
+        _n = (_y & 0x80) != 0;
+        _z = _y == 0;
 
       /*
         STA (STore Accumulator)
