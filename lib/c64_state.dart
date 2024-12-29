@@ -18,6 +18,10 @@ class DataShowState extends C64State {
       required this.y,
       required this.n,
       required this.z,
+      required this.c,
+      required this.i,
+      required this.d,
+      required this.v,
       required this.pc,
       required this.dumpNo});
 
@@ -27,6 +31,11 @@ class DataShowState extends C64State {
   final int y;
   final bool n;
   final bool z;
+  final bool c;
+  final bool i;
+  final bool d;
+  final bool v;
+
   final int pc;
   final int dumpNo;
 

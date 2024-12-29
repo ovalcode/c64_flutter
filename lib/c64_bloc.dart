@@ -22,8 +22,13 @@ class C64Bloc extends Bloc<C64Event, C64State> {
           a: _cpu.getAcc(),
           x: _cpu.getX(),
           y: _cpu.getY(),
-          n: _cpu.getN(),
-          z: _cpu.getZ(),
+          n: _cpu.getN() == 1,
+          z: _cpu.getZ() == 1,
+          c: _cpu.getC() == 1,
+          i: _cpu.getI() == 1,
+          d: _cpu.getD() == 1,
+          v: _cpu.getV() == 1,
+
           pc: _cpu.pc));
     });
 
@@ -36,8 +41,13 @@ class C64Bloc extends Bloc<C64Event, C64State> {
           a: _cpu.getAcc(),
           x: _cpu.getX(),
           y: _cpu.getY(),
-          n: _cpu.getN(),
-          z: _cpu.getZ(),
+          n: _cpu.getN() == 1,
+          z: _cpu.getZ() == 1,
+          c: _cpu.getC() == 1,
+          i: _cpu.getI() == 1,
+          d: _cpu.getD() == 1,
+          v: _cpu.getV() == 1,
+
           pc: _cpu.pc));
     });
 

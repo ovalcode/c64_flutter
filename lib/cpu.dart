@@ -76,8 +76,16 @@ class Cpu {
     return 0;
   }
 
-  int _a = 0, _x = 0, _y = 0;
-  bool _n = false, _z = false;
+  int _a = 0,
+      _x = 0,
+      _y = 0;
+
+  int _n = 0,
+      _z = 0,
+      _c = 0,
+      _i = 0,
+      _d = 0,
+      _v = 0;
   int pc = 0;
 
   Cpu({required this.memory});
@@ -94,12 +102,28 @@ class Cpu {
     return _y;
   }
 
-  bool getN() {
+  int getN() {
     return _n;
   }
 
-  bool getZ() {
+  int getZ() {
     return _z;
+  }
+
+  int getC() {
+    return _c;
+  }
+
+  int getI() {
+    return _i;
+  }
+
+  int getD() {
+    return _d;
+  }
+
+  int getV() {
+    return _v;
   }
 
   step() {
@@ -119,7 +143,7 @@ class Cpu {
     var resolvedAddress = calculateEffectiveAddress(
         CpuTables.addressModes[opCode], arg0, arg1);
     switch (opCode) {
-      /*
+    /*
         Zero Page     LDA $44       $A5  2   3
         Zero Page,X   LDA $44,X     $B5  2   4
         Absolute      LDA $4400     $AD  3   4
@@ -130,8 +154,8 @@ class Cpu {
     */
       case 0xa9:
         _a = arg0;
-        _n = (_a & 0x80) != 0;
-        _z = _a == 0;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
       case 0xB5:
       case 0xAD:
       case 0xBD:
@@ -139,8 +163,8 @@ class Cpu {
       case 0xA1:
       case 0xB1:
         _a = memory.getMem(resolvedAddress);
-        _n = (_a & 0x80) != 0;
-        _z = _a == 0;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
 
 /*
 LDX (LoaD X register)
@@ -156,17 +180,17 @@ Absolute,Y    LDX $4400,Y   $BE  3   4+
  */
       case 0xA2:
         _x = arg0;
-        _n = (_x & 0x80) != 0;
-        _z = _x == 0;
+        _n = ((_x & 0x80) != 0) ? 1 : 0;
+        _z = (_x == 0) ? 1 : 0;
       case 0xA6:
       case 0xB6:
       case 0xAE:
       case 0xBE:
         _x = memory.getMem(resolvedAddress);
-        _n = (_x & 0x80) != 0;
-        _z = _x == 0;
+        _n = ((_x & 0x80) != 0) ? 1 : 0;
+        _z = (_x == 0) ? 1 : 0;
 
-      /*
+    /*
       LDY (LoaD Y register)
 Affects Flags: N Z
 
@@ -180,17 +204,17 @@ Absolute,X    LDY $4400,X   $BC  3   4+
        */
       case 0xA0:
         _y = arg0;
-        _n = (_y & 0x80) != 0;
-        _z = _y == 0;
+        _n = ((_y & 0x80) != 0) ? 1 : 0;
+        _z = (_y == 0) ? 1 : 0;
       case 0xA4:
       case 0xB4:
       case 0xAC:
       case 0xBC:
         _y = memory.getMem(resolvedAddress);
-        _n = (_y & 0x80) != 0;
-        _z = _y == 0;
+        _n = ((_y & 0x80) != 0) ? 1 : 0;
+        _z = (_y == 0) ? 1 : 0;
 
-      /*
+    /*
         STA (STore Accumulator)
 Affects Flags: none
 
@@ -212,7 +236,7 @@ Indirect,Y    STA ($44),Y   $91  2   6
       case 0x91:
         memory.setMem(_a, resolvedAddress);
 
-      /*
+    /*
         STX (STore X register)
 Affects Flags: none
 
@@ -227,7 +251,7 @@ Absolute      STX $4400     $8E  3   4
       case 0x8E:
         memory.setMem(_x, resolvedAddress);
 
-      /*
+    /*
       STY (STore Y register)
 Affects Flags: none
 
@@ -240,6 +264,63 @@ Absolute      STY $4400     $8C  3   4
       case 0x94:
       case 0x8C:
         memory.setMem(_y, resolvedAddress);
+/*ADC (ADd with Carry)
+Affects Flags: N V Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Immediate     ADC #$44      $69  2   2
+Zero Page     ADC $44       $65  2   3
+Zero Page,X   ADC $44,X     $75  2   4
+Absolute      ADC $4400     $6D  3   4
+Absolute,X    ADC $4400,X   $7D  3   4+
+Absolute,Y    ADC $4400,Y   $79  3   4+
+Indirect,X    ADC ($44,X)   $61  2   6
+Indirect,Y    ADC ($44),Y   $71  2   5+
+
++ add 1 cycle if page boundary crossed
+
+ADC results are dependant on the setting of the decimal flag. In decimal mode, addition is carried out on the assumption that the values involved are packed BCD (Binary Coded Decimal).
+There is no way to add without carry.
+*/
+
+/*DEC (DECrement memory)
+Affects Flags: N Z
+
+MODE           SYNTAX       HEX LEN TIM
+Zero Page     DEC $44       $C6  2   5
+Zero Page,X   DEC $44,X     $D6  2   6
+Absolute      DEC $4400     $CE  3   6
+Absolute,X    DEC $4400,X   $DE  3   7
+*/
+
+/*INC (INCrement memory)
+Affects Flags: N Z
+
+MODE           SYNTAX       HEX LEN TIM
+Zero Page     INC $44       $E6  2   5
+Zero Page,X   INC $44,X     $F6  2   6
+Absolute      INC $4400     $EE  3   6
+Absolute,X    INC $4400,X   $FE  3   7*/
+
+/*SBC (SuBtract with Carry)
+Affects Flags: N V Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Immediate     SBC #$44      $E9  2   2
+Zero Page     SBC $44       $E5  2   3
+Zero Page,X   SBC $44,X     $F5  2   4
+Absolute      SBC $4400     $ED  3   4
+Absolute,X    SBC $4400,X   $FD  3   4+
+Absolute,Y    SBC $4400,Y   $F9  3   4+
+Indirect,X    SBC ($44,X)   $E1  2   6
+Indirect,Y    SBC ($44),Y   $F1  2   5+
+
++ add 1 cycle if page boundary crossed
+
+SBC results are dependant on the setting of the decimal flag. In decimal mode, subtraction is carried out on the assumption that the values involved are packed BCD (Binary Coded Decimal).
+There is no way to subtract without the carry which works as an inverse borrow. i.e, to subtract you set the carry before the operation. If the carry is cleared by the operation, it indicates a borrow occurred.
+*/
     }
   }
+
 }
