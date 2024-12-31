@@ -76,16 +76,9 @@ class Cpu {
     return 0;
   }
 
-  int _a = 0,
-      _x = 0,
-      _y = 0;
+  int _a = 0, _x = 0, _y = 0;
 
-  int _n = 0,
-      _z = 0,
-      _c = 0,
-      _i = 0,
-      _d = 0,
-      _v = 0;
+  int _n = 0, _z = 0, _c = 0, _i = 0, _d = 0, _v = 0;
   int pc = 0;
 
   Cpu({required this.memory});
@@ -126,6 +119,27 @@ class Cpu {
     return _v;
   }
 
+  void adc(int operand) {
+    int temp = _a + operand + _c;
+    _v = (((_a ^ temp) & (operand ^ temp) & 0x80) != 0) ? 1 : 0;
+    _a = temp & 0xff;
+    //N V Z C
+    _n = ((_a & 0x80) == 0x80) ? 1 : 0;
+    _z = (_a == 0) ? 1 : 0;
+    _c = (temp & 0x100) != 0 ? 1 : 0;
+  }
+
+  void sbc(int operand) {
+    operand = ~operand & 0xff;
+    int temp = _a + operand + _c;
+    _v = (((_a ^ temp) & (operand ^ temp) & 0x80) != 0) ? 1 : 0;
+    _a = temp & 0xff;
+    //N V Z C
+    _n = ((_a & 0x80) == 0x80) ? 1 : 0;
+    _z = (_a == 0) ? 1 : 0;
+    _c = (temp & 0x100) != 0 ? 1 : 0;
+  }
+
   step() {
     var opCode = memory.getMem(pc);
     pc++;
@@ -140,10 +154,10 @@ class Cpu {
       arg1 = memory.getMem(pc);
       pc++;
     }
-    var resolvedAddress = calculateEffectiveAddress(
-        CpuTables.addressModes[opCode], arg0, arg1);
+    var resolvedAddress =
+        calculateEffectiveAddress(CpuTables.addressModes[opCode], arg0, arg1);
     switch (opCode) {
-    /*
+      /*
         Zero Page     LDA $44       $A5  2   3
         Zero Page,X   LDA $44,X     $B5  2   4
         Absolute      LDA $4400     $AD  3   4
@@ -190,7 +204,7 @@ Absolute,Y    LDX $4400,Y   $BE  3   4+
         _n = ((_x & 0x80) != 0) ? 1 : 0;
         _z = (_x == 0) ? 1 : 0;
 
-    /*
+      /*
       LDY (LoaD Y register)
 Affects Flags: N Z
 
@@ -214,7 +228,7 @@ Absolute,X    LDY $4400,X   $BC  3   4+
         _n = ((_y & 0x80) != 0) ? 1 : 0;
         _z = (_y == 0) ? 1 : 0;
 
-    /*
+      /*
         STA (STore Accumulator)
 Affects Flags: none
 
@@ -236,7 +250,7 @@ Indirect,Y    STA ($44),Y   $91  2   6
       case 0x91:
         memory.setMem(_a, resolvedAddress);
 
-    /*
+      /*
         STX (STore X register)
 Affects Flags: none
 
@@ -251,7 +265,7 @@ Absolute      STX $4400     $8E  3   4
       case 0x8E:
         memory.setMem(_x, resolvedAddress);
 
-    /*
+      /*
       STY (STore Y register)
 Affects Flags: none
 
@@ -283,6 +297,16 @@ ADC results are dependant on the setting of the decimal flag. In decimal mode, a
 There is no way to add without carry.
 */
 
+      case 0x69:
+        adc(arg0);
+      case 0x65:
+      case 0x75:
+      case 0x6D:
+      case 0x7D:
+      case 0x79:
+      case 0x61:
+      case 0x71:
+        adc(memory.getMem(resolvedAddress));
 /*DEC (DECrement memory)
 Affects Flags: N Z
 
@@ -292,7 +316,15 @@ Zero Page,X   DEC $44,X     $D6  2   6
 Absolute      DEC $4400     $CE  3   6
 Absolute,X    DEC $4400,X   $DE  3   7
 */
-
+      case 0xC6:
+      case 0xD6:
+      case 0xCE:
+      case 0xDE:
+        int temp = memory.getMem(resolvedAddress) - 1;
+        temp = temp & 0xff;
+        _n = ((temp & 0x80) != 0) ? 1 : 0;
+        _z = (temp == 0) ? 1 : 0;
+        memory.setMem(temp, resolvedAddress);
 /*INC (INCrement memory)
 Affects Flags: N Z
 
@@ -301,6 +333,15 @@ Zero Page     INC $44       $E6  2   5
 Zero Page,X   INC $44,X     $F6  2   6
 Absolute      INC $4400     $EE  3   6
 Absolute,X    INC $4400,X   $FE  3   7*/
+      case 0xE6:
+      case 0xF6:
+      case 0xEE:
+      case 0xFE:
+        int temp = memory.getMem(resolvedAddress) + 1;
+        temp = temp & 0xff;
+        _n = ((temp & 0x80) != 0) ? 1 : 0;
+        _z = (temp == 0) ? 1 : 0;
+        memory.setMem(temp, resolvedAddress);
 
 /*SBC (SuBtract with Carry)
 Affects Flags: N V Z C
@@ -320,7 +361,44 @@ Indirect,Y    SBC ($44),Y   $F1  2   5+
 SBC results are dependant on the setting of the decimal flag. In decimal mode, subtraction is carried out on the assumption that the values involved are packed BCD (Binary Coded Decimal).
 There is no way to subtract without the carry which works as an inverse borrow. i.e, to subtract you set the carry before the operation. If the carry is cleared by the operation, it indicates a borrow occurred.
 */
+      case 0xE9:
+        sbc(arg0);
+      case 0xE5:
+      case 0xF5:
+      case 0xED:
+      case 0xFD:
+      case 0xF9:
+      case 0xE1:
+      case 0xF1:
+        sbc(memory.getMem(resolvedAddress));
+
+/*
+These instructions are implied mode, have a length of one byte and require two machine cycles.
+
+MNEMONIC                       HEX
+CLC (CLear Carry)              $18
+SEC (SEt Carry)                $38
+CLI (CLear Interrupt)          $58
+SEI (SEt Interrupt)            $78
+CLV (CLear oVerflow)           $B8
+CLD (CLear Decimal)            $D8
+SED (SEt Decimal)              $F8
+
+ */
+      case 0x18:
+        _c = 0;
+      case 0x38:
+        _c = 1;
+      case 0x58:
+        _i = 0;
+      case 0x78:
+        _i = 1;
+      case 0xB8:
+        _v = 0;
+      case 0xD8:
+        _d = 0;
+      case 0xF8:
+        _d = 1;
     }
   }
-
 }
