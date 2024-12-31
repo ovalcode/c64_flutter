@@ -170,6 +170,7 @@ class Cpu {
         _a = arg0;
         _n = ((_a & 0x80) != 0) ? 1 : 0;
         _z = (_a == 0) ? 1 : 0;
+      case 0xA5:
       case 0xB5:
       case 0xAD:
       case 0xBD:
