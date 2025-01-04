@@ -400,6 +400,223 @@ SED (SEt Decimal)              $F8
         _d = 0;
       case 0xF8:
         _d = 1;
+/*
+AND (bitwise AND with accumulator)
+Affects Flags: N Z
+
+MODE           SYNTAX       HEX LEN TIM
+Immediate     AND #$44      $29  2   2
+Zero Page     AND $44       $25  2   3
+Zero Page,X   AND $44,X     $35  2   4
+Absolute      AND $4400     $2D  3   4
+Absolute,X    AND $4400,X   $3D  3   4+
+Absolute,Y    AND $4400,Y   $39  3   4+
+Indirect,X    AND ($44,X)   $21  2   6
+Indirect,Y    AND ($44),Y   $31  2   5+
+
++ add 1 cycle if page boundary crossed
+
+ */
+      case 0x29:
+        _a = _a & arg0;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+      case 0x25:
+      case 0x35:
+      case 0x2D:
+      case 0x3D:
+      case 0x39:
+      case 0x21:
+      case 0x31:
+        _a = _a & memory.getMem(resolvedAddress);
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+
+      /*
+ASL (Arithmetic Shift Left)
+Affects Flags: N Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Accumulator   ASL A         $0A  1   2
+Zero Page     ASL $44       $06  2   5
+Zero Page,X   ASL $44,X     $16  2   6
+Absolute      ASL $4400     $0E  3   6
+Absolute,X    ASL $4400,X   $1E  3   7
+
+ASL shifts all bits left one position. 0 is shifted into bit 0 and the original bit 7 is shifted into the Carry.
+
+ */
+      case 0x0A:
+        _a = _a << 1;
+        _c = ((_a & 0x100) != 0) ? 1 : 0;
+        _a = _a & 0xff;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+      case 0x06:
+      case 0x16:
+      case 0x0E:
+      case 0x1E:
+        int temp = memory.getMem(resolvedAddress) << 1;
+        _c = ((temp & 0x100) != 0) ? 1 : 0;
+        temp = temp & 0xff;
+        _n = ((temp & 0x80) != 0) ? 1 : 0;
+        _z = (temp == 0) ? 1 : 0;
+        memory.setMem(temp, resolvedAddress);
+      /*
+    EOR (bitwise Exclusive OR)
+Affects Flags: N Z
+
+MODE           SYNTAX       HEX LEN TIM
+Immediate     EOR #$44      $49  2   2
+Zero Page     EOR $44       $45  2   3
+Zero Page,X   EOR $44,X     $55  2   4
+Absolute      EOR $4400     $4D  3   4
+Absolute,X    EOR $4400,X   $5D  3   4+
+Absolute,Y    EOR $4400,Y   $59  3   4+
+Indirect,X    EOR ($44,X)   $41  2   6
+Indirect,Y    EOR ($44),Y   $51  2   5+
+
++ add 1 cycle if page boundary crossed
+
+     */
+      case 0x49:
+        _a = _a ^ arg0;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+      case 0x45:
+      case 0x55:
+      case 0x4D:
+      case 0x5D:
+      case 0x59:
+      case 0x41:
+      case 0x51:
+        _a = _a ^ memory.getMem(resolvedAddress);
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+
+      /*
+LSR (Logical Shift Right)
+Affects Flags: N Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Accumulator   LSR A         $4A  1   2
+Zero Page     LSR $44       $46  2   5
+Zero Page,X   LSR $44,X     $56  2   6
+Absolute      LSR $4400     $4E  3   6
+Absolute,X    LSR $4400,X   $5E  3   7
+
+LSR shifts all bits right one position. 0 is shifted into bit 7 and the original bit 0 is shifted into the Carry.
+
+ */
+      case 0x4A:
+        _c = _a & 1;
+        _a = _a >> 1;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+      case 0x46:
+      case 0x56:
+      case 0x4E:
+      case 0x5E:
+        int temp = memory.getMem(resolvedAddress);
+        _c = temp & 1;
+        temp = temp >> 1;
+        _n = ((temp & 0x80) != 0) ? 1 : 0;
+        _z = (temp == 0) ? 1 : 0;
+        memory.setMem(temp, resolvedAddress);
+/*
+ORA (bitwise OR with Accumulator)
+Affects Flags: N Z
+
+MODE           SYNTAX       HEX LEN TIM
+Immediate     ORA #$44      $09  2   2
+Zero Page     ORA $44       $05  2   3
+Zero Page,X   ORA $44,X     $15  2   4
+Absolute      ORA $4400     $0D  3   4
+Absolute,X    ORA $4400,X   $1D  3   4+
+Absolute,Y    ORA $4400,Y   $19  3   4+
+Indirect,X    ORA ($44,X)   $01  2   6
+Indirect,Y    ORA ($44),Y   $11  2   5+
+
++ add 1 cycle if page boundary crossed
+
+ */
+      case 0x09:
+        _a = _a | arg0;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+      case 0x05:
+      case 0x15:
+      case 0x0D:
+      case 0x1D:
+      case 0x19:
+      case 0x01:
+      case 0x11:
+        _a = _a | memory.getMem(resolvedAddress);
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+
+/*
+ROL (ROtate Left)
+Affects Flags: N Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Accumulator   ROL A         $2A  1   2
+Zero Page     ROL $44       $26  2   5
+Zero Page,X   ROL $44,X     $36  2   6
+Absolute      ROL $4400     $2E  3   6
+Absolute,X    ROL $4400,X   $3E  3   7
+
+ROL shifts all bits left one position. The Carry is shifted into bit 0 and the original bit 7 is shifted into the Carry.
+
+
+ */
+      case 0x2A:
+        _a = (_a << 1) | _c;
+        _c = ((_a & 0x100) != 0) ? 1 : 0;
+        _a = _a & 0xff;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+      case 0x26:
+      case 0x36:
+      case 0x2E:
+      case 0x3E:
+        int temp = (memory.getMem(resolvedAddress) << 1) | _c;
+        _c = ((temp & 0x100) != 0) ? 1 : 0;
+        temp = temp & 0xff;
+        _n = ((temp & 0x80) != 0) ? 1 : 0;
+        _z = (temp == 0) ? 1 : 0;
+        memory.setMem(temp, resolvedAddress);
+      /*
+    ROR (ROtate Right)
+Affects Flags: N Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Accumulator   ROR A         $6A  1   2
+Zero Page     ROR $44       $66  2   5
+Zero Page,X   ROR $44,X     $76  2   6
+Absolute      ROR $4400     $6E  3   6
+Absolute,X    ROR $4400,X   $7E  3   7
+
+ROR shifts all bits right one position. The Carry is shifted into bit 7 and the original bit 0 is shifted into the Carry.
+
+
+     */
+      case 0x6A:
+        _a = _a | (_c << 8);
+        _c = _a & 1;
+        _a = _a >> 1;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+      case 0x66:
+      case 0x76:
+      case 0x6E:
+      case 0x7E:
+        int temp = memory.getMem(resolvedAddress) | (_c << 8);
+        _c = temp & 1;
+        temp = temp >> 1;
+        _n = ((temp & 0x80) != 0) ? 1 : 0;
+        _z = (temp == 0) ? 1 : 0;
+        memory.setMem(temp, resolvedAddress);
     }
   }
 }
