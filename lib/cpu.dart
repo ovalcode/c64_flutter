@@ -51,7 +51,7 @@ class Cpu {
       case AddressMode.zeroPageY:
         return (operand1 + _y) & 0xff;
       case AddressMode.relative:
-      // TODO: Handle this case.
+        return (pc + operand1.toSigned(8)) & 0xffff;
       case AddressMode.absolute:
         return (operand2 << 8) | operand1;
       case AddressMode.absoluteX:
@@ -138,6 +138,20 @@ class Cpu {
     _n = ((_a & 0x80) == 0x80) ? 1 : 0;
     _z = (_a == 0) ? 1 : 0;
     _c = (temp & 0x100) != 0 ? 1 : 0;
+  }
+
+  void compare(int operand1, int operand2) {
+    operand2 = ~operand2 & 0xff;
+    operand1 = operand1 + operand2 + 1;
+    _n = ((operand1 & 0x80) == 0x80) ? 1 : 0;
+    _c = (operand1 & 0x100) != 0 ? 1 : 0;
+    _z = ((operand1 & 0xff) == 0) ? 1 : 0;
+  }
+
+  branchConditional(bool doBranch, branchAddress) {
+    if (doBranch) {
+      pc = branchAddress;
+    }
   }
 
   step() {
@@ -617,6 +631,128 @@ ROR shifts all bits right one position. The Carry is shifted into bit 7 and the 
         _n = ((temp & 0x80) != 0) ? 1 : 0;
         _z = (temp == 0) ? 1 : 0;
         memory.setMem(temp, resolvedAddress);
+/*
+CMP (CoMPare accumulator)
+Affects Flags: N Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Immediate     CMP #$44      $C9  2   2
+Zero Page     CMP $44       $C5  2   3
+Zero Page,X   CMP $44,X     $D5  2   4
+Absolute      CMP $4400     $CD  3   4
+Absolute,X    CMP $4400,X   $DD  3   4+
+Absolute,Y    CMP $4400,Y   $D9  3   4+
+Indirect,X    CMP ($44,X)   $C1  2   6
+Indirect,Y    CMP ($44),Y   $D1  2   5+
+
++ add 1 cycle if page boundary crossed
+ */
+      case 0xC9:
+        compare(_a, arg0);
+      case 0xC5:
+      case 0xD5:
+      case 0xCD:
+      case 0xDD:
+      case 0xD9:
+      case 0xC1:
+      case 0xD1:
+        compare(_a, memory.getMem(resolvedAddress));
+/*
+CPX (ComPare X register)
+Affects Flags: N Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Immediate     CPX #$44      $E0  2   2
+Zero Page     CPX $44       $E4  2   3
+Absolute      CPX $4400     $EC  3   4
+ */
+      case 0xE0:
+        compare(_x, arg0);
+      case 0xE4:
+      case 0xEC:
+        compare(_x, memory.getMem(resolvedAddress));
+/*
+CPY (ComPare Y register)
+Affects Flags: N Z C
+
+MODE           SYNTAX       HEX LEN TIM
+Immediate     CPY #$44      $C0  2   2
+Zero Page     CPY $44       $C4  2   3
+Absolute      CPY $4400     $CC  3   4
+ */
+      case 0xC0:
+        compare(_y, arg0);
+      case 0xC4:
+      case 0xCC:
+        compare(_y, memory.getMem(resolvedAddress));
+        /*
+MNEMONIC                       HEX
+BPL (Branch on PLus)           $10
+BMI (Branch on MInus)          $30
+BVC (Branch on oVerflow Clear) $50
+BVS (Branch on oVerflow Set)   $70
+BCC (Branch on Carry Clear)    $90
+BCS (Branch on Carry Set)      $B0
+BNE (Branch on Not Equal)      $D0
+BEQ (Branch on EQual)          $F0
+         */
+    /*
+    BPL (Branch on PLus)           $10
+     */
+      case 0x10:
+        branchConditional(_n == 0, resolvedAddress);
+    /*
+    BMI (Branch on MInus)          $30
+     */
+      case 0x30:
+        branchConditional(_n == 1, resolvedAddress);
+    /*
+    BVC (Branch on oVerflow Clear) $50
+     */
+      case 0x50:
+        branchConditional(_v == 0, resolvedAddress);
+    /*
+    BVS (Branch on oVerflow Set)   $70
+     */
+      case 0x70:
+        branchConditional(_v == 1, resolvedAddress);
+
+    /*
+    BCC (Branch on Carry Clear)    $90
+     */
+      case 0x90:
+        branchConditional(_c == 0, resolvedAddress);
+    /*
+    BCS (Branch on Carry Set)      $B0
+     */
+      case 0xB0:
+        branchConditional(_c == 1, resolvedAddress);
+    /*
+    BNE (Branch on Not Equal)      $D0
+     */
+      case 0xD0:
+        branchConditional(_z == 0, resolvedAddress);
+    /*
+    BEQ (Branch on EQual)          $F0
+     */
+      case 0xF0:
+        branchConditional(_z == 1, resolvedAddress);
+    /*
+    DEX (decrease X register)          $CA
+     */
+      case 0xCA:
+        _x--;
+        _x = _x & 0xff;
+        _n = ((_x & 0x80) != 0) ? 1 : 0;
+        _z = (_x == 0) ? 1 : 0;
+    /*
+    DEY (decrease y register)          $88
+     */
+      case 0x88:
+        _y--;
+        _y = _y & 0xff;
+        _n = ((_y & 0x80) != 0) ? 1 : 0;
+        _z = (_y == 0) ? 1 : 0;
     }
   }
 }
