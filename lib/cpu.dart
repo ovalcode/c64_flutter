@@ -79,9 +79,22 @@ class Cpu {
   int _a = 0, _x = 0, _y = 0;
 
   int _n = 0, _z = 0, _c = 0, _i = 0, _d = 0, _v = 0;
+  int _sp = 0xff;
   int pc = 0;
 
   Cpu({required this.memory});
+
+  push(int value) {
+    memory.setMem(value, _sp | 0x100);
+    _sp--;
+    _sp = _sp & 0xff;
+  }
+
+  int pull() {
+    _sp++;
+    _sp = _sp & 0xff;
+    return memory.getMem(_sp | 0x100);
+  }
 
   int getAcc() {
     return _a;
@@ -753,6 +766,62 @@ BEQ (Branch on EQual)          $F0
         _y = _y & 0xff;
         _n = ((_y & 0x80) != 0) ? 1 : 0;
         _z = (_y == 0) ? 1 : 0;
+    /*
+    PHA (PusH Accumulator)          $48  3
+    */
+      case 0x48:
+        push(_a);
+    /*
+    PLA (PuLl Accumulator)          $68  4
+    */
+      case 0x68:
+        _a = pull();
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+/*
+MODE           SYNTAX       HEX LEN TIM
+Absolute      JSR $5597     $20  3   6
+ */
+      case 0x20:
+        int temp = (pc - 1) & 0xffff;
+        push(temp >> 8);
+        push(temp & 0xff);
+        pc = resolvedAddress;
+/*
+MODE           SYNTAX       HEX LEN TIM
+Implied       RTS           $60  1   6
+ */
+      case 0x60:
+        pc = pull();
+        pc = pc | (pull() << 8);
+        pc++;
+        pc = pc & 0xffff;
+/*
+        TXS (Transfer X to Stack ptr)   $9A  2
+ */
+      case 0x9a:
+        _sp = _x;
+/*
+        TSX (Transfer Stack ptr to X)   $BA  2
+ */
+      case 0xba:
+        _x = _sp;
+/*
+        PHP (PusH Processor status)     $08  3
+ */
+      case 0x08:
+        push((_n << 7) | (_v << 6) | (3 << 4) | (_d << 3) | (_i << 2) | (_z << 1) | _c);
+/*
+        PLP (PuLl Processor status)     $28  4
+ */
+      case 0x28:
+        int temp = pull();
+        _c = temp & 1;
+        _z = (temp >> 1) & 1;
+        _i = (temp >> 2) & 1;
+        _d = (temp >> 3) & 1;
+        _v = (temp >> 6) & 1;
+        _n = (temp >> 7) & 1;
     }
   }
 }

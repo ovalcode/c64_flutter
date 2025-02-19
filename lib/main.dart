@@ -102,7 +102,7 @@ class MyHomePage extends StatelessWidget {
   String getMemDump(ByteData memDump) {
     String result = '';
     for (int i = 0; i < memDump.lengthInBytes; i++) {
-      if ((i % 16) == 0) {
+      if ((i % 32) == 0) {
         String addressLabel = i.toRadixString(16).padLeft(4, '0').toUpperCase();
         result = '$result\n$addressLabel';
       }

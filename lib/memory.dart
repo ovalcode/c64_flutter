@@ -16,7 +16,7 @@ class Memory {
   }
 
   type_data.ByteData getDebugSnippet()  {
-    return type_data.ByteData.sublistView(_data, 0, 256);
+    return type_data.ByteData.sublistView(_data, 0, 512);
   }
 
 }

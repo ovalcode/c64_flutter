@@ -18,7 +18,7 @@ class C64Bloc extends Bloc<C64Event, C64State> {
       memory.populateMem(byteArray);
       emit(DataShowState(
           dumpNo: dumpNo++,
-          memorySnippet: type_data.ByteData.sublistView(byteArray, 0, 256),
+          memorySnippet: type_data.ByteData.sublistView(byteArray, 0, 512),
           a: _cpu.getAcc(),
           x: _cpu.getX(),
           y: _cpu.getY(),
@@ -37,7 +37,7 @@ class C64Bloc extends Bloc<C64Event, C64State> {
       // emit(C64DebugState(memorySnippet: ByteData.sublistView(memory.getDebugSnippet(), 0, 256)));
       emit(DataShowState(
           dumpNo: dumpNo++,
-          memorySnippet: ByteData.sublistView(memory.getDebugSnippet(), 0, 256),
+          memorySnippet: ByteData.sublistView(memory.getDebugSnippet(), 0, 512),
           a: _cpu.getAcc(),
           x: _cpu.getX(),
           y: _cpu.getY(),
