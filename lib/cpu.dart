@@ -61,7 +61,8 @@ class Cpu {
         var add = (operand2 << 8) | operand1;
         return (add + _y) & 0xffff;
       case AddressMode.indirect:
-      // TODO: Handle this case.
+        var lookupAddress = (operand2 << 8) | operand1;
+        return memory.getMem(lookupAddress) | (memory.getMem(lookupAddress + 1) << 8);
       case AddressMode.indexedIndirect: // LDA ($40,X)
         var add = operand1 + _x;
         var readByte0 = memory.getMem(add & 0xff);
@@ -822,6 +823,90 @@ Implied       RTS           $60  1   6
         _d = (temp >> 3) & 1;
         _v = (temp >> 6) & 1;
         _n = (temp >> 7) & 1;
+        /*
+JMP (JuMP)
+Affects Flags: none
+
+MODE           SYNTAX       HEX LEN TIM
+Absolute      JMP $5597     $4C  3   3
+Indirect      JMP ($5597)   $6C  3   5
+         */
+      case 0x4C:
+      case 0x6C:
+        pc = resolvedAddress;
+/*
+BIT (test BITs)
+Affects Flags: N V Z
+
+MODE           SYNTAX       HEX LEN TIM
+Zero Page     BIT $44       $24  2   3
+Absolute      BIT $4400     $2C  3   4
+
+BIT sets the Z flag as though the value in the address tested were ANDed
+with the accumulator. The N and V flags are set to match bits 7 and 6
+respectively in the value stored at the tested address.
+ */
+      case 0x24:
+      case 0x2C:
+        int memByte = memory.getMem(resolvedAddress);
+        _z = ((memByte & _a) == 0) ? 1 : 0;
+        _n = ((memByte & 0x80) != 0) ? 1 :0;
+        _v = ((memByte & 0x40) != 0) ? 1 :0;
+        /*
+NOP (No OPeration)
+Affects Flags: none
+
+MODE           SYNTAX       HEX LEN TIM
+Implied       NOP           $EA  1   2
+         */
+      case 0xEA:
+        break;
+/*
+Register Instructions
+Affect Flags: N Z
+
+These instructions are implied mode, have a length of one byte and require two machine cycles.
+
+MNEMONIC                 HEX
+TAX (Transfer A to X)    $AA
+TXA (Transfer X to A)    $8A
+INX (INcrement X)        $E8
+TAY (Transfer A to Y)    $A8
+TYA (Transfer Y to A)    $98
+INY (INcrement Y)        $C8
+ */
+      case 0xAA:
+        _x = _a;
+        _n = ((_x & 0x80) != 0) ? 1 : 0;
+        _z = (_x == 0) ? 1 : 0;
+
+      case 0x8A:
+        _a = _x;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+
+      case 0xE8:
+        _x++;
+        _x = _x & 0xff;
+        _n = ((_x & 0x80) != 0) ? 1 : 0;
+        _z = (_x == 0) ? 1 : 0;
+
+      case 0xA8:
+        _y = _a;
+        _n = ((_y & 0x80) != 0) ? 1 : 0;
+        _z = (_y == 0) ? 1 : 0;
+
+      case 0x98:
+        _a = _y;
+        _n = ((_a & 0x80) != 0) ? 1 : 0;
+        _z = (_a == 0) ? 1 : 0;
+
+      case 0xC8:
+        _y++;
+        _y = _y & 0xff;
+        _n = ((_y & 0x80) != 0) ? 1 : 0;
+        _z = (_y == 0) ? 1 : 0;
+
     }
   }
 }
