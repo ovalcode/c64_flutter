@@ -42,3 +42,5 @@ class DataShowState extends C64State {
   @override
   List<Object> get props => [dumpNo];
 }
+
+class RunningState extends C64State {}

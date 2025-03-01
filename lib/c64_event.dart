@@ -12,3 +12,8 @@ abstract class C64Event/* extends Equatable*/ {
 class InitEmulatorEvent extends C64Event {}
 
 class StepEvent extends C64Event {}
+
+class RunEvent extends C64Event {}
+
+class StopEvent extends C64Event {}
+

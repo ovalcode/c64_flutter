@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,6 +13,7 @@ class C64Bloc extends Bloc<C64Event, C64State> {
   final Memory memory = Memory();
   late final Cpu _cpu = Cpu(memory: memory);
   int dumpNo = 0;
+  Timer? timer;
 
   C64Bloc() : super(InitialState()) {
     on<InitEmulatorEvent>((event, emit) async {
@@ -35,6 +38,37 @@ class C64Bloc extends Bloc<C64Event, C64State> {
     on<StepEvent>((event, emit) {
       _cpu.step();
       // emit(C64DebugState(memorySnippet: ByteData.sublistView(memory.getDebugSnippet(), 0, 256)));
+      emit(DataShowState(
+          dumpNo: dumpNo++,
+          memorySnippet: ByteData.sublistView(memory.getDebugSnippet(), 0, 512),
+          a: _cpu.getAcc(),
+          x: _cpu.getX(),
+          y: _cpu.getY(),
+          n: _cpu.getN() == 1,
+          z: _cpu.getZ() == 1,
+          c: _cpu.getC() == 1,
+          i: _cpu.getI() == 1,
+          d: _cpu.getD() == 1,
+          v: _cpu.getV() == 1,
+
+          pc: _cpu.pc));
+    });
+
+    on<RunEvent>((event, emit) {
+      timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          int start = DateTime.now().millisecondsSinceEpoch;
+          int targetCycles = _cpu.getCycles() + 1000000;
+          do {
+            _cpu.step();
+          } while (_cpu.getCycles() < targetCycles);
+          int end = DateTime.now().millisecondsSinceEpoch;
+          print(end - start);
+      });
+      emit(RunningState());
+    });
+
+    on<StopEvent>((event, emit) {
+      timer?.cancel();
       emit(DataShowState(
           dumpNo: dumpNo++,
           memorySnippet: ByteData.sublistView(memory.getDebugSnippet(), 0, 512),

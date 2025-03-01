@@ -81,7 +81,8 @@ class Cpu {
 
   int _n = 0, _z = 0, _c = 0, _i = 0, _d = 0, _v = 0;
   int _sp = 0xff;
-  int pc = 0;
+  int pc = 0x400;
+  int _cycles = 0;
 
   Cpu({required this.memory});
 
@@ -133,6 +134,10 @@ class Cpu {
     return _v;
   }
 
+  int getCycles() {
+    return _cycles;
+  }
+
   void adc(int operand) {
     int temp = _a + operand + _c;
     _v = (((_a ^ temp) & (operand ^ temp) & 0x80) != 0) ? 1 : 0;
@@ -182,6 +187,7 @@ class Cpu {
       arg1 = memory.getMem(pc);
       pc++;
     }
+    _cycles = _cycles + CpuTables.instructionCycles[opCode];
     var resolvedAddress =
         calculateEffectiveAddress(CpuTables.addressModes[opCode], arg0, arg1);
     switch (opCode) {
@@ -907,6 +913,24 @@ INY (INcrement Y)        $C8
         _n = ((_y & 0x80) != 0) ? 1 : 0;
         _z = (_y == 0) ? 1 : 0;
 
+      /*BRK*/
+      case 0x00:
+        push(pc >> 8);
+        push(pc & 0xff);
+        push((_n << 7) | (_v << 6) | (3 << 4) | (_d << 3) | (_i << 2) | (_z << 1) | _c);
+        _i = 1;
+        pc = (memory.getMem(0xffff) << 8) | memory.getMem(0xfffe);
+
+      /*RTI*/
+      case 0x40:
+        int temp = pull();
+        _c = temp & 1;
+        _z = (temp >> 1) & 1;
+        _i = (temp >> 2) & 1;
+        _d = (temp >> 3) & 1;
+        _v = (temp >> 6) & 1;
+        _n = (temp >> 7) & 1;
+        pc = pull() | (pull() << 8);
     }
   }
 }
