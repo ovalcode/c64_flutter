@@ -148,6 +148,41 @@ class Cpu {
     _c = (temp & 0x100) != 0 ? 1 : 0;
   }
 
+  int adcDecimal(int operand) {
+    int l = 0;
+    int h = 0;
+    int result = 0;
+    l = (_a & 0x0f) + (operand & 0x0f) + _c;
+    if ((l & 0xff) > 9) l += 6;
+    h = (_a >> 4) + (operand >> 4) + (l > 15 ? 1 : 0);
+    if ((h & 0xff) > 9) h += 6;
+    result = (l & 0x0f) | (h << 4);
+    result &= 0xff;
+    _c = (h > 15) ? 1 : 0;
+    _z = (result == 0) ? 1 : 0;
+    _n = 0;
+    _v = 0;
+    return result;
+  }
+
+  int sbcDecimal(int operand) {
+    int l = 0;
+    int h = 0;
+    int result = 0;
+    l = (_a & 0x0f) - (operand & 0x0f) - (1 - _c);
+    if ((l & 0x10) != 0) l -= 6;
+    h = (_a >> 4) - (operand >> 4) - ((l & 0x10) != 0 ? 1 : 0);
+    if ((h & 0x10) != 0) h -= 6;
+    result = (l & 0x0f) | (h << 4);
+    _c = ((h & 0xff) < 15) ? 1 : 0;
+    _z = (result == 0) ? 1 : 0;
+    _n = 0;
+    _v = 0;
+    return (result & 0xff);
+  }
+
+
+
   void sbc(int operand) {
     operand = ~operand & 0xff;
     int temp = _a + operand + _c;
@@ -333,7 +368,11 @@ There is no way to add without carry.
 */
 
       case 0x69:
-        adc(arg0);
+        if (_d == 1) {
+          _a = adcDecimal(arg0);
+        } else {
+          adc(arg0);
+        }
       case 0x65:
       case 0x75:
       case 0x6D:
@@ -341,7 +380,11 @@ There is no way to add without carry.
       case 0x79:
       case 0x61:
       case 0x71:
-        adc(memory.getMem(resolvedAddress));
+        if (_d == 1) {
+          _a = adcDecimal(memory.getMem(resolvedAddress));
+        } else {
+          adc(memory.getMem(resolvedAddress));
+        }
 /*DEC (DECrement memory)
 Affects Flags: N Z
 
@@ -397,7 +440,11 @@ SBC results are dependant on the setting of the decimal flag. In decimal mode, s
 There is no way to subtract without the carry which works as an inverse borrow. i.e, to subtract you set the carry before the operation. If the carry is cleared by the operation, it indicates a borrow occurred.
 */
       case 0xE9:
-        sbc(arg0);
+        if (_d == 1) {
+          _a = sbcDecimal(arg0);
+        } else {
+          sbc(arg0);
+        }
       case 0xE5:
       case 0xF5:
       case 0xED:
@@ -405,7 +452,11 @@ There is no way to subtract without the carry which works as an inverse borrow. 
       case 0xF9:
       case 0xE1:
       case 0xF1:
-        sbc(memory.getMem(resolvedAddress));
+        if (_d == 1) {
+          _a = sbcDecimal(memory.getMem(resolvedAddress));
+        } else {
+          sbc(memory.getMem(resolvedAddress));
+        }
 
 /*
 These instructions are implied mode, have a length of one byte and require two machine cycles.
