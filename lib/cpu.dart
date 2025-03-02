@@ -813,6 +813,9 @@ Implied       RTS           $60  1   6
  */
       case 0xba:
         _x = _sp;
+        _n = ((_x & 0x80) != 0) ? 1 : 0;
+        _z = (_x == 0) ? 1 : 0;
+
 /*
         PHP (PusH Processor status)     $08  3
  */
