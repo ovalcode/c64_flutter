@@ -72,9 +72,7 @@ class C64Bloc extends Bloc<C64Event, C64State> {
           } while (_cpu.getCycles() < targetCycles);
           ui.decodeImageFromPixels(memory.getDisplayImage().buffer.asUint8List(), 320, 200, ui.PixelFormat.bgra8888, setImg);
           int end = DateTime.now().millisecondsSinceEpoch;
-          print(end - start);
       });
-      emit(RunningState());
     });
 
     on<StopEvent>((event, emit) {
