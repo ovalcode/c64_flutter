@@ -52,19 +52,15 @@ class MyHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title:  Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("Emulator C64"),
-                BlocBuilder<C64Bloc, C64State>(
-                  builder: (BuildContext context, state) {
-                    return Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          _getRunStopButton(state, context)
-                        ]);
-                  })
-              ]),
+          title: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Text("Emulator C64"),
+            BlocBuilder<C64Bloc, C64State>(
+                builder: (BuildContext context, state) {
+              return Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [_getRunStopButton(state, context)]);
+            })
+          ]),
         ),
         body: BlocBuilder<C64Bloc, C64State>(
           builder: (BuildContext context, state) {
@@ -84,7 +80,8 @@ class MyHomePage extends StatelessWidget {
                 ],
               );
             } else if (state is RunningState) {
-              return const Text("Running");
+              return RawImage(
+                  image: state.image, scale: 0.5);
             } else {
               return const CircularProgressIndicator();
             }
@@ -111,25 +108,20 @@ class MyHomePage extends StatelessWidget {
   }
 
   Widget _getRunStopButton(C64State state, BuildContext context) {
-    if(state is DataShowState) {
+    if (state is DataShowState) {
       return IconButton(
-        icon: Icon(Icons.play_arrow),
-        onPressed:  () {
-          context.read<C64Bloc>().add(RunEvent());
-        }
-      );
+          icon: Icon(Icons.play_arrow),
+          onPressed: () {
+            context.read<C64Bloc>().add(RunEvent());
+          });
     } else if (state is RunningState) {
       return IconButton(
           icon: Icon(Icons.stop_circle),
-          onPressed:  () {
+          onPressed: () {
             context.read<C64Bloc>().add(StopEvent());
-          }
-      );
+          });
     } else {
-      return const IconButton(
-          icon: Icon(Icons.play_arrow),
-          onPressed:  null
-      );
+      return const IconButton(icon: Icon(Icons.play_arrow), onPressed: null);
     }
   }
 

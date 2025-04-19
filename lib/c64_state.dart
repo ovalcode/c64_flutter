@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:equatable/equatable.dart';
 
 abstract class C64State extends Equatable {
@@ -43,4 +44,13 @@ class DataShowState extends C64State {
   List<Object> get props => [dumpNo];
 }
 
-class RunningState extends C64State {}
+class RunningState extends C64State {
+  RunningState({required this.image,
+    required this.frameNo});
+
+  final int frameNo;
+  final ui.Image image;
+  @override
+  List<Object> get props => [frameNo];
+
+}

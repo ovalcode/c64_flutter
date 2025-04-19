@@ -85,6 +85,10 @@ class Cpu {
   int _cycles = 0;
 
   Cpu({required this.memory});
+  
+  reset() {
+    pc = memory.getMem(0xfffc) | (memory.getMem(0xfffd) << 8);
+  }
 
   push(int value) {
     memory.setMem(value, _sp | 0x100);
@@ -209,6 +213,13 @@ class Cpu {
   }
 
   step() {
+    if ((_cycles > 1000000) &&((_cycles % 16666) < 30) && (_i == 0)) {
+      push(pc >> 8);
+      push(pc & 0xff);
+      push((_n << 7) | (_v << 6) | (2 << 4) | (_d << 3) | (_i << 2) | (_z << 1) | _c);
+      _i = 1;
+      pc = memory.getMem(0xfffe) | (memory.getMem(0xffff) << 8);
+    }
     var opCode = memory.getMem(pc);
     pc++;
     var insLen = CpuTables.instructionLen[opCode];

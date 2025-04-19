@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'dart:ui' as ui;
 import 'c64_event.dart';
 import 'c64_state.dart';
 import 'cpu.dart';
@@ -12,16 +12,21 @@ import 'dart:typed_data' as type_data;
 class C64Bloc extends Bloc<C64Event, C64State> {
   final Memory memory = Memory();
   late final Cpu _cpu = Cpu(memory: memory);
+  type_data.ByteData image = type_data.ByteData(200*200*4);
   int dumpNo = 0;
+  int frameNo = 0;
   Timer? timer;
 
   C64Bloc() : super(InitialState()) {
     on<InitEmulatorEvent>((event, emit) async {
-      final byteArray = await rootBundle.load("assets/program.bin");
-      memory.populateMem(byteArray);
+      final basicData = await rootBundle.load("assets/basic.bin");
+      final characterData = await rootBundle.load("assets/characters.bin");
+      final kernalData = await rootBundle.load("assets/kernal.bin");
+      memory.populateMem(basicData, characterData, kernalData);
+      _cpu.reset();
       emit(DataShowState(
           dumpNo: dumpNo++,
-          memorySnippet: type_data.ByteData.sublistView(byteArray, 0, 512),
+          memorySnippet: type_data.ByteData(512),
           a: _cpu.getAcc(),
           x: _cpu.getX(),
           y: _cpu.getY(),
@@ -54,13 +59,18 @@ class C64Bloc extends Bloc<C64Event, C64State> {
           pc: _cpu.pc));
     });
 
+    void setImg(ui.Image data) {
+      emit(RunningState(image: data, frameNo: frameNo++));
+    }
+
     on<RunEvent>((event, emit) {
-      timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      timer = Timer.periodic(const Duration(milliseconds: 17), (timer) {
           int start = DateTime.now().millisecondsSinceEpoch;
-          int targetCycles = _cpu.getCycles() + 1000000;
+          int targetCycles = _cpu.getCycles() + 16666;
           do {
             _cpu.step();
           } while (_cpu.getCycles() < targetCycles);
+          ui.decodeImageFromPixels(memory.getDisplayImage().buffer.asUint8List(), 320, 200, ui.PixelFormat.bgra8888, setImg);
           int end = DateTime.now().millisecondsSinceEpoch;
           print(end - start);
       });
