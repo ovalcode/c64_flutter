@@ -1,16 +1,24 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:ui' as ui;
 import 'c64_event.dart';
 import 'c64_state.dart';
 import 'cpu.dart';
+import 'keyboard_scan_map.dart';
 import 'memory.dart';
 import 'dart:typed_data' as type_data;
 
-class C64Bloc extends Bloc<C64Event, C64State> {
+abstract class KeyInfo {
+  int getKeyInfo(int column);
+}
+
+class C64Bloc extends Bloc<C64Event, C64State> implements KeyInfo {
   final Memory memory = Memory();
+  final List<int> matrix = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+  final FocusNode focusNode = FocusNode();
   late final Cpu _cpu = Cpu(memory: memory);
   type_data.ByteData image = type_data.ByteData(200*200*4);
   int dumpNo = 0;
@@ -18,6 +26,7 @@ class C64Bloc extends Bloc<C64Event, C64State> {
   Timer? timer;
 
   C64Bloc() : super(InitialState()) {
+    memory.setKeyInfo(this);
     on<InitEmulatorEvent>((event, emit) async {
       final basicData = await rootBundle.load("assets/basic.bin");
       final characterData = await rootBundle.load("assets/characters.bin");
@@ -93,6 +102,32 @@ class C64Bloc extends Bloc<C64Event, C64State> {
           pc: _cpu.pc));
     });
 
+    on<KeyC64Event>((event, emit) {
+      int c64KeyCode = keyMap[event.key] ?? 0;
+      int col = c64KeyCode >> 3;
+      int row = 1 << (c64KeyCode & 7);
+      if (!event.keyDown) {
+        matrix[col] |= row;
+      } else {
+        matrix[col] &= ~row;
+      }
+    });
+
     add(InitEmulatorEvent());
+  }
+
+  @override
+  int getKeyInfo(int column ) {
+    int result = 0xff; // Accumulator for the OR'ed numbers
+
+    for (var row in matrix) {
+      if ((column & 1) == 0) {
+        result &= row; // Bitwise OR the current number with finalOrValue
+      }
+
+      column = column >> 1;
+    }
+
+    return result;
   }
 }

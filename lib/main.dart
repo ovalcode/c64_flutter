@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'c64_bloc.dart';
@@ -46,8 +47,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key});
 
+  const MyHomePage({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,8 +81,19 @@ class MyHomePage extends StatelessWidget {
                 ],
               );
             } else if (state is RunningState) {
-              return RawImage(
-                  image: state.image, scale: 0.5);
+              return KeyboardListener(
+                focusNode: context.read<C64Bloc>().focusNode,
+                autofocus: true,
+                onKeyEvent: (event) => {
+                  if (event is KeyDownEvent) {
+                    context.read<C64Bloc>().add(KeyC64Event(keyDown: true, key: event.logicalKey))
+                  } else if (event is KeyUpEvent) {
+                    context.read<C64Bloc>().add(KeyC64Event(keyDown: false, key: event.logicalKey))
+                  }
+                },
+                child: RawImage(
+                    image: state.image, scale: 0.5),
+              );
             } else {
               return const CircularProgressIndicator();
             }

@@ -1,5 +1,7 @@
 import 'dart:typed_data' as type_data;
 
+import 'package:c64_flutter/c64_bloc.dart';
+
 class Memory {
   late type_data.ByteData _basic;
   late type_data.ByteData _character;
@@ -7,6 +9,13 @@ class Memory {
   var _readCount = 0;
   final type_data.ByteData image = type_data.ByteData(320*200*4);
   final type_data.ByteData _ram = type_data.ByteData(64*1024);
+  late final KeyInfo keyInfo;
+
+  Memory();
+
+  setKeyInfo(KeyInfo keyInfo) {
+    this.keyInfo = keyInfo;
+  }
 
   populateMem(type_data.ByteData basicData, type_data.ByteData characterData,
       type_data.ByteData kernalData) {
@@ -27,6 +36,8 @@ class Memory {
       return _kernal.getUint8(address & 0x1fff);
     } else if (address == 0xD012) {
       return (_readCount & 1024) == 0 ? 1 : 0;
+    } else if (address == 0xDC01) {
+      return keyInfo.getKeyInfo(_ram.getUint8(0xDC00));
     } else {
       return _ram.getUint8(address);
     }
