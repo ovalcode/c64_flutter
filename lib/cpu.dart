@@ -84,6 +84,8 @@ class Cpu {
   int pc = 0x400;
   int _cycles = 0;
 
+  late final Function() _interruptCallback;
+
   Cpu({required this.memory});
   
   reset() {
@@ -212,7 +214,19 @@ class Cpu {
     }
   }
 
+  setInterruptCallback(Function() callback) {
+    _interruptCallback = callback;
+  }
+
   step() {
+    if (_interruptCallback() & (_i == 0)) {
+      push(pc >> 8);
+      push(pc & 0xff);
+      push((_n << 7) | (_v << 6) | (2 << 4) | (_d << 3) | (_i << 2) | (_z << 1) | _c);
+      _i = 1;
+      pc = memory.getMem(0xfffe) | (memory.getMem(0xffff) << 8);
+    }
+/*
     if ((_cycles > 1000000) &&((_cycles % 16666) < 30) && (_i == 0)) {
       push(pc >> 8);
       push(pc & 0xff);
@@ -220,6 +234,7 @@ class Cpu {
       _i = 1;
       pc = memory.getMem(0xfffe) | (memory.getMem(0xffff) << 8);
     }
+*/
     var opCode = memory.getMem(pc);
     pc++;
     var insLen = CpuTables.instructionLen[opCode];

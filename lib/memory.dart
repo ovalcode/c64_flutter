@@ -1,6 +1,7 @@
 import 'dart:typed_data' as type_data;
 
 import 'package:c64_flutter/c64_bloc.dart';
+import 'package:c64_flutter/cia1.dart';
 
 class Memory {
   late type_data.ByteData _basic;
@@ -9,12 +10,16 @@ class Memory {
   var _readCount = 0;
   final type_data.ByteData image = type_data.ByteData(320*200*4);
   final type_data.ByteData _ram = type_data.ByteData(64*1024);
-  late final KeyInfo keyInfo;
+  late final Cia1 cia1;
 
   Memory();
 
-  setKeyInfo(KeyInfo keyInfo) {
+/*  setKeyInfo(KeyInfo keyInfo) {
     this.keyInfo = keyInfo;
+  }*/
+
+  setCia1(Cia1 cia1) {
+    this.cia1 = cia1;
   }
 
   populateMem(type_data.ByteData basicData, type_data.ByteData characterData,
@@ -25,7 +30,11 @@ class Memory {
   }
 
   setMem(int value, int address ) {
-    _ram.setInt8(address, value);
+    if ((address >> 8) == 0xDC) {
+      cia1.setMem(address, value);
+    } else {
+      _ram.setInt8(address, value);
+    }
   }
 
   int getMem(int address) {
@@ -36,8 +45,11 @@ class Memory {
       return _kernal.getUint8(address & 0x1fff);
     } else if (address == 0xD012) {
       return (_readCount & 1024) == 0 ? 1 : 0;
-    } else if (address == 0xDC01) {
-      return keyInfo.getKeyInfo(_ram.getUint8(0xDC00));
+    } else if ((address >> 8) == 0xDC ) {
+      return cia1.getMem(address);
+
+    /*else if (address == 0xDC01) {
+      return keyInfo.getKeyInfo(_ram.getUint8(0xDC00));*/
     } else {
       return _ram.getUint8(address);
     }

@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:c64_flutter/cia1.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:ui' as ui;
+import 'alarms.dart';
 import 'c64_event.dart';
 import 'c64_state.dart';
 import 'cpu.dart';
@@ -20,18 +22,23 @@ class C64Bloc extends Bloc<C64Event, C64State> implements KeyInfo {
   final List<int> matrix = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
   final FocusNode focusNode = FocusNode();
   late final Cpu _cpu = Cpu(memory: memory);
+  late final Alarms alarms = Alarms();
   type_data.ByteData image = type_data.ByteData(200*200*4);
   int dumpNo = 0;
   int frameNo = 0;
   Timer? timer;
 
   C64Bloc() : super(InitialState()) {
-    memory.setKeyInfo(this);
+    // memory.setKeyInfo(this);
     on<InitEmulatorEvent>((event, emit) async {
       final basicData = await rootBundle.load("assets/basic.bin");
       final characterData = await rootBundle.load("assets/characters.bin");
       final kernalData = await rootBundle.load("assets/kernal.bin");
+      Cia1 cia1 = Cia1(alarms: alarms);
+      cia1.setKeyInfo(this);
+      memory.setCia1(cia1);
       memory.populateMem(basicData, characterData, kernalData);
+      _cpu.setInterruptCallback(() => cia1.hasInterrupts());
       _cpu.reset();
       emit(DataShowState(
           dumpNo: dumpNo++,
@@ -78,6 +85,10 @@ class C64Bloc extends Bloc<C64Event, C64State> implements KeyInfo {
           int targetCycles = _cpu.getCycles() + 16666;
           do {
             _cpu.step();
+            alarms.processAlarms(_cpu.getCycles());
+            // Process alarms
+            // In memory class
+            // cia clas existing
           } while (_cpu.getCycles() < targetCycles);
           ui.decodeImageFromPixels(memory.getDisplayImage().buffer.asUint8List(), 320, 200, ui.PixelFormat.bgra8888, setImg);
           int end = DateTime.now().millisecondsSinceEpoch;
