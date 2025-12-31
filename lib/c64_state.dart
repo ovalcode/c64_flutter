@@ -46,10 +46,14 @@ class DataShowState extends C64State {
 
 class RunningState extends C64State {
   RunningState({required this.image,
+    required this.tapeLoaded,
     required this.frameNo});
 
   final int frameNo;
   final ui.Image image;
+  final bool tapeLoaded;
+  // bool tapeLoaded = false;
+
   @override
   List<Object> get props => [frameNo];
 

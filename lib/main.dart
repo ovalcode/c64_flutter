@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -91,9 +94,38 @@ class MyHomePage extends StatelessWidget {
                     context.read<C64Bloc>().add(KeyC64Event(keyDown: false, key: event.logicalKey))
                   }
                 },
-                child: RawImage(
-                    image: state.image, scale: 0.5),
-              );
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                            icon: Icon(Icons.folder),
+                            onPressed: () async {
+                              context.read<C64Bloc>().add(LoadTapeRequested());
+                              // FilePickerResult? result = await FilePicker.platform.pickFiles();
+                              // if (result != null) {
+                              //   File file = File(result.files.single.path!);
+                              //   Uint8List bytes = file.readAsBytesSync();
+                              //   bytes.buffer.
+                              // }
+                            }),
+                        IconButton(
+                            icon: Icon(Icons.play_arrow),
+                            onPressed: !state.tapeLoaded ? null : () async {
+                              context.read<C64Bloc>().add(PlayTapeRequested());
+                              // FilePickerResult? result = await FilePicker.platform.pickFiles();
+                              // if (result != null) {
+                              //   File file = File(result.files.single.path!);
+                              //   Uint8List bytes = file.readAsBytesSync();
+                              //   bytes.buffer.
+                              // }
+                            })
+                      ],
+                    ),
+                    RawImage(
+                      image: state.image, scale: 0.5),
+                ],
+              ));
             } else {
               return const CircularProgressIndicator();
             }

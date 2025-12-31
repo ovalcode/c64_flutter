@@ -18,6 +18,10 @@ class RunEvent extends C64Event {}
 
 class StopEvent extends C64Event {}
 
+class LoadTapeRequested extends C64Event {}
+
+class PlayTapeRequested extends C64Event {}
+
 class KeyC64Event extends C64Event {
   final bool keyDown;
   final LogicalKeyboardKey key;

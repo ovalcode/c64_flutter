@@ -2,11 +2,13 @@ import 'dart:typed_data' as type_data;
 
 import 'package:c64_flutter/c64_bloc.dart';
 import 'package:c64_flutter/cia1.dart';
+import 'package:c64_flutter/tape.dart';
 
 class Memory {
   late type_data.ByteData _basic;
   late type_data.ByteData _character;
   late type_data.ByteData _kernal;
+  late TapeMemoryInterface _tape;
   var _readCount = 0;
   final type_data.ByteData image = type_data.ByteData(320*200*4);
   final type_data.ByteData _ram = type_data.ByteData(64*1024);
@@ -22,6 +24,10 @@ class Memory {
     this.cia1 = cia1;
   }
 
+  setTape(TapeMemoryInterface tape) {
+    _tape = tape;
+  }
+
   populateMem(type_data.ByteData basicData, type_data.ByteData characterData,
       type_data.ByteData kernalData) {
     _basic = basicData;
@@ -32,6 +38,9 @@ class Memory {
   setMem(int value, int address ) {
     if ((address >> 8) == 0xDC) {
       cia1.setMem(address, value);
+    } else if (address == 1) {
+      _ram.setInt8(address, value);
+      _tape.setMotor((value & 0x20) == 0 );
     } else {
       _ram.setInt8(address, value);
     }
@@ -50,6 +59,9 @@ class Memory {
 
     /*else if (address == 0xDC01) {
       return keyInfo.getKeyInfo(_ram.getUint8(0xDC00));*/
+    } else if (address == 1) {
+      var value = _ram.getUint8(address) & 0xef;
+      return value | _tape.getCassetteSense();
     } else {
       return _ram.getUint8(address);
     }

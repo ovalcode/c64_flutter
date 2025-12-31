@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:c64_flutter/cia1.dart';
+import 'package:c64_flutter/tape.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,7 +24,9 @@ class C64Bloc extends Bloc<C64Event, C64State> implements KeyInfo {
   final List<int> matrix = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
   final FocusNode focusNode = FocusNode();
   late final Cpu _cpu = Cpu(memory: memory);
+  late final Tape _tape;
   late final Alarms alarms = Alarms();
+  bool tapeLoaded = false;
   type_data.ByteData image = type_data.ByteData(200*200*4);
   int dumpNo = 0;
   int frameNo = 0;
@@ -36,8 +40,11 @@ class C64Bloc extends Bloc<C64Event, C64State> implements KeyInfo {
       final kernalData = await rootBundle.load("assets/kernal.bin");
       Cia1 cia1 = Cia1(alarms: alarms);
       cia1.setKeyInfo(this);
+      Tape tape = Tape(alarms: alarms, interrupt: cia1);
+      _tape = tape;
       memory.setCia1(cia1);
       memory.populateMem(basicData, characterData, kernalData);
+      memory.setTape(tape);
       _cpu.setInterruptCallback(() => cia1.hasInterrupts());
       _cpu.reset();
       emit(DataShowState(
@@ -76,11 +83,11 @@ class C64Bloc extends Bloc<C64Event, C64State> implements KeyInfo {
     });
 
     void setImg(ui.Image data) {
-      emit(RunningState(image: data, frameNo: frameNo++));
+      emit(RunningState(image: data, frameNo: frameNo++, tapeLoaded: tapeLoaded));
     }
 
     on<RunEvent>((event, emit) {
-      timer = Timer.periodic(const Duration(milliseconds: 17), (timer) {
+      timer = Timer.periodic(const Duration(milliseconds: 20), (timer) {
           int start = DateTime.now().millisecondsSinceEpoch;
           int targetCycles = _cpu.getCycles() + 16666;
           do {
@@ -90,8 +97,9 @@ class C64Bloc extends Bloc<C64Event, C64State> implements KeyInfo {
             // In memory class
             // cia clas existing
           } while (_cpu.getCycles() < targetCycles);
-          ui.decodeImageFromPixels(memory.getDisplayImage().buffer.asUint8List(), 320, 200, ui.PixelFormat.bgra8888, setImg);
           int end = DateTime.now().millisecondsSinceEpoch;
+          // print (end-start);
+          ui.decodeImageFromPixels(memory.getDisplayImage().buffer.asUint8List(), 320, 200, ui.PixelFormat.bgra8888, setImg);
       });
     });
 
@@ -122,6 +130,26 @@ class C64Bloc extends Bloc<C64Event, C64State> implements KeyInfo {
       } else {
         matrix[col] &= ~row;
       }
+    });
+
+    on<PlayTapeRequested>((event, emit) {
+      _tape.playTape();
+    });
+
+
+
+    on<LoadTapeRequested>((event, emit) async {
+      final result = await FilePicker.platform.pickFiles(
+        withData: true,
+        type: FileType.custom,
+        allowedExtensions: ['tap', 't64'],
+      );
+
+      if (result == null) return;
+      tapeLoaded = true;
+      _tape.setTapeImage(result.files.single.bytes!);
+      // result.files.single.bytes!
+      // add(TapeLoaded(result.files.single.bytes!));
     });
 
     add(InitEmulatorEvent());

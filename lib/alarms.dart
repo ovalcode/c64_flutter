@@ -10,6 +10,10 @@ final class Alarm extends LinkedListEntry<Alarm> {
     _callback = callback;
   }
 
+  markForUnlinking() {
+    _alarms.markAlarmForRemoval(this);
+  }
+
   setTicks(int ticks) {
     _targetClock = _alarms.getCurrentCpuCount() + ticks;
   }
@@ -30,6 +34,7 @@ final class Alarm extends LinkedListEntry<Alarm> {
 class Alarms {
   final LinkedList<Alarm> _alarmList = LinkedList<Alarm>();
   int _cpuCount = 0;
+  final List<Alarm> _toRemove = [];
 
   Alarms();
 
@@ -37,6 +42,17 @@ class Alarms {
     var alarm = Alarm._(this, callback);
     _alarmList.add(alarm);
     return alarm;
+  }
+
+  markAlarmForRemoval(Alarm alarm) {
+    _toRemove.add(alarm);
+  }
+
+  removeAlarms() {
+    for (var alarm in _toRemove) {
+      alarm.unlink();
+    }
+    _toRemove.clear();
   }
 
   reAddAlarm(Alarm alarm) {
@@ -54,5 +70,6 @@ class Alarms {
         item.processAlarm(item.getRemainingTicks());
       }
     }
+    removeAlarms();
   }
 }
