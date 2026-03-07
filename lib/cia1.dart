@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:c64_flutter/alarms.dart';
 
-import 'c64_bloc.dart';
+import 'emulator_controller.dart';
 
 abstract class TapeInterrupt {
   triggerInterrupt();
@@ -39,12 +39,6 @@ class Cia1 implements TapeInterrupt {
   setKeyInfo(KeyInfo keyInfo) {
     this.keyInfo = keyInfo;
   }
-
-/*
-  processTimerAEvent() {
-    
-  }
-*/
 
   updateTimerA() {
     if (!timerAstarted) {
@@ -101,7 +95,6 @@ class Cia1 implements TapeInterrupt {
   }
 
   setMem(int address, int value) {
-    // print("setMem ${address.toRadixString(16)} ${value.toRadixString(16)}");
     value = value & 0xff;
     address = address & 0xf;
     switch (address) {
