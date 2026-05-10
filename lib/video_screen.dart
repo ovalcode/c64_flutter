@@ -21,16 +21,20 @@ class _VideoScreenState extends State<VideoScreen>
   late EmulatorController controller;
   late EmulatorCanvas emCanvas;
   int lastProcessed = 0;
+  int frameCount = 0;
+  double fps = 0;
+  int lastFpsUpdate = 0;
 
   @override
   void initState() {
     super.initState();
 
     controller = context.read<EmulatorController>();
-    emCanvas = EmulatorCanvas(320, 200);
+    emCanvas = EmulatorCanvas(400, 284);
     controller.setCanvasArray(emCanvas.getFrameBuffer());
 
     _ticker = createTicker((Duration elapsed) {
+      final now = elapsed.inMilliseconds;
       if ((elapsed.inMilliseconds - lastProcessed) < 16) {
         return;
       }
@@ -38,6 +42,18 @@ class _VideoScreenState extends State<VideoScreen>
 
       controller.executeChunk();
       emCanvas.renderFrame();
+
+      // FPS tracking
+      frameCount++;
+
+      if ((now - lastFpsUpdate) >= 3000) { // every 3 seconds
+        fps = frameCount / ((now - lastFpsUpdate) / 1000);
+
+        frameCount = 0;
+        lastFpsUpdate = now;
+
+        setState(() {}); // trigger UI update
+      }
     });
 
     _ticker.start();
@@ -52,7 +68,7 @@ class _VideoScreenState extends State<VideoScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF4040E0), // Classic C64 blue
+      backgroundColor: const Color(0xFFFFFFE0), // Classic C64 blue
       body: Column(
         children: [
           Row(
@@ -75,13 +91,14 @@ class _VideoScreenState extends State<VideoScreen>
                   icon: const Icon(Icons.play_arrow),
                   onPressed: () async {
                     controller.playTape();
-                  })
+                  }),
+              Text("FPS: ${fps.toStringAsFixed(1)}")
             ],
           ),
 
           const SizedBox(
-            width: 640,
-            height: 400,
+            width: 600,
+            height: 426,
             child: HtmlElementView(viewType: 'emulator-canvas'),
           ),
           // EmulatorControls(),

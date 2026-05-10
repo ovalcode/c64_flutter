@@ -1,4 +1,5 @@
 import 'package:c64_flutter/tape.dart';
+import 'package:c64_flutter/vicii.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,7 @@ abstract class KeyInfo {
 
 class EmulatorController implements KeyInfo{
   final Memory memory = Memory();
+  late final Vicii vic;
   final List<int> matrix = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
   late final Cpu _cpu = Cpu(memory: memory);
   late final Tape _tape;
@@ -39,9 +41,12 @@ class EmulatorController implements KeyInfo{
     cia1.setKeyInfo(this);
     Tape tape = Tape(alarms: alarms, interrupt: cia1);
     _tape = tape;
+    vic = Vicii(alarms);
     memory.setCia1(cia1);
     memory.populateMem(basicData, characterData, kernalData);
     memory.setTape(tape);
+    vic.memory = memory;
+    memory.vic = vic;
     _cpu.setInterruptCallback(() => cia1.hasInterrupts());
     _cpu.reset();
   }
@@ -54,12 +59,13 @@ class EmulatorController implements KeyInfo{
       // Process alarms
       // In memory class
       // cia clas existing
-    } while (_cpu.getCycles() < targetCycles);
-    memory.renderDisplayImage();
+    } while (!vic.getFrameFinished());
+    vic.renderDisplayImage();
   }
 
   void setCanvasArray(type_data.Uint32List byteArray) {
-    memory.setByteArray(byteArray);
+    // memory.setByteArray(byteArray);
+    vic.image = byteArray;
   }
 
   void setTapeImage(FilePickerResult result) {

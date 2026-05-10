@@ -34,6 +34,7 @@ class Tape implements TapeMemoryInterface {
       _remainingPulseTicks = val << 3;
       _tapeImage.moveNext();
     } else {
+      _tapeImage.moveNext();
       var byte0 = _tapeImage.current;
       _tapeImage.moveNext();
       var byte1 = _tapeImage.current;
